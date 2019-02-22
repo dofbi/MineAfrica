@@ -2,17 +2,18 @@
 
 import multiprocessing
 from twisted.internet import reactor
-from quarry.net.proxy import DownstreamFactory, Bridge
+from quarry.net.proxy import DownstreamFactory, Upstream, UpstreamFactory, Bridge
 from quarry.types import uuid
 from Crypto.Cipher import AES
 
 #Each Client and Proxy needs to keep track of which enemy is their own. 
-class QuietBridge(Bridge):
+class MinecraftProxyBridge(Bridge):
 	quiet_mode = False
 	events_enabled = False
 	
 	def __init__(self, downstream_factory, downstream): 
 		self.clients_and_positions = []
+		self.packet_done = False
 		self.block_len = AES.block_size
 
 		#We will need one for each client
@@ -20,33 +21,50 @@ class QuietBridge(Bridge):
 		self.in_enc_buff = bytearray() #coming from client
 
 		super().__init__(downstream_factory, downstream)
-		
-	def packet_upstream_player_position_and_look(self, buff):
-		buff.save()
-		message = buff.read() 
-		#print(self.downstream.connect_host + str(self.downstream.connect_port))
-		#self.downstream_factory.receiving_packet_queue.put(message)
-		#self.logger.info(self.downstream_factory.receiving_packet_queue)
-		buff.restore()
-		self.upstream.send_packet("player_position_and_look", buff.read())
-	
-	def check_buff(self): 
-		data = self.downstream_factory.forwarding_packet_queue.get()
-		if data != None: 
-			self.out_enc_buff = bytearray(data)
-		else: 
+
+	def get_byte_from_buff(self, buff): 
+		buff = self.check_buff(buff)
+		if(len(buff) == 0): 
+			buff_byte = 256; 
+		else:
+			buff_byte = buff.pop(0)
+		return buff_byte
+
+	def get_bytes_from_buff(self, buff, num_bytes): 
+		buff_bytes = []
+		for num in range(0, num_bytes):
+			buff_byte = self.get_byte_from_buff(buff)
+			buff_bytes.append(buff_byte)
+		return buff_bytes
+
+	def check_buff(self, buff):
+		if len(buff) < 1 and self.downstream.factory.forwarding_packet_queue.qsize() > 0: 
+			data = self.downstream.factory.forwarding_packet_queue.get()
+			if(data != None): 
+				buff = bytearray(data)
+			self.packet_done = True
+		return buff
+
+	def check_packet_done_flag(self): 
+		if self.packet_done: 
 			self.enemy_enc_look()
+			self.packet_done = False
 
 	def encode(self): 
-		if self.downstream_factory.forwarding_packet_queue.qsize() > 0 or len(self.out_enc_buff) > 0:
+		if self.downstream.factory.forwarding_packet_queue.qsize() > 0 or len(self.out_enc_buff) > 0:
 			if len(self.out_enc_buff) > 0: 
 				self.enemy_enc_head_look(21445)
+				self.enemy_enc_head_look(21446)
+				self.enemy_enc_head_look(21447)
+				self.enemy_enc_head_look(21448)
 			else: 
-				self.check_buff()
-    
+				self.out_enc_buff = self.check_buff(self.out_enc_buff)
+
+			self.check_packet_done_flag()
+
 	def enemy_enc_head_look(self, enemy_id): 
-		yaw = self.out_enc_buff.pop(0)
 		val = 0
+		yaw = self.get_byte_from_buff(self.out_enc_buff)
 		self.downstream.send_packet("entity_head_look", self.downstream.buff_type.pack_varint(enemy_id), self.downstream.buff_type.pack("B", yaw ))
 
 	def enemy_enc_look(self): 
@@ -76,12 +94,15 @@ class QuietBridge(Bridge):
 
 			chosen_client.send_packet("spawn_mob",chosen_client.buff_type.pack_varint(mid) + chosen_client.buff_type.pack_uuid(uuid.UUID.random()) + self.downstream.buff_type.pack_varint(did) + chosen_client.buff_type.pack("dddbbbhhhB", x, y, z, z1, z2, z3, z4, z5, z6, 255))
 
+			chosen_client.send_packet("spawn_mob",chosen_client.buff_type.pack_varint(mid+1) + chosen_client.buff_type.pack_uuid(uuid.UUID.random()) + self.downstream.buff_type.pack_varint(did) + chosen_client.buff_type.pack("dddbbbhhhB", x+1, y, z+3, z1, z2, z3, z4, z5, z6, 255))
+			
+			chosen_client.send_packet("spawn_mob",chosen_client.buff_type.pack_varint(mid+2) + chosen_client.buff_type.pack_uuid(uuid.UUID.random()) + self.downstream.buff_type.pack_varint(did) + chosen_client.buff_type.pack("dddbbbhhhB", x-2, y, z-6, z1, z2, z3, z4, z5, z6, 255))
+			
+			chosen_client.send_packet("spawn_mob",chosen_client.buff_type.pack_varint(mid+3) + chosen_client.buff_type.pack_uuid(uuid.UUID.random()) + self.downstream.buff_type.pack_varint(did) + chosen_client.buff_type.pack("dddbbbhhhB", x+7, y, z-20, z1, z2, z3, z4, z5, z6, 255))
 #--------------------------------------------------------------------
-	def check_incoming_buffer(self):
-		if(len(self.in_enc_buff) == self.block_len):
-			self.downstream_factory.receiving_packet_queue.put(self.in_enc_buff)
-			#print(self.in_enc_buff)
-			self.in_enc_buff = bytearray()
+	def update_incoming_buffer(self):
+		self.downstream_factory.receiving_packet_queue.put(self.in_enc_buff)
+		self.in_enc_buff = bytearray()
 
 
 	#def packet_downstream_spawn_mob(self, buff):
@@ -96,7 +117,6 @@ class QuietBridge(Bridge):
 		slot_num  = buff.unpack_slot()
 		item_num = slot_num["item"]
 		if(item_num < 256): 
-			self.check_incoming_buffer()
 			self.in_enc_buff.append(item_num)
 
 		buff.restore()
@@ -106,18 +126,36 @@ class QuietBridge(Bridge):
 	#is finished
 	def packet_upstream_player_look(self, buff): 
 		buff.save()
-		self.check_incoming_buffer()
+		self.update_incoming_buffer()
 		self.downstream_factory.receiving_packet_queue.put(None)
 		buff.restore()
 		self.upstream.send_packet("player_look", buff.read())
 
-	def packet_upstream_player_position_and_look(self, buff): 
+	def packet_upstream_player_position(self, buff): 
 		buff.save()
 		buff.restore()
 		self.upstream.send_packet("player_position", buff.read())
 
 	def packet_upstream_player_position_and_look(self, buff): 
 		buff.save()
+
+		pos_x = buff.unpack("d")
+		buff.unpack("d")
+		pox_z = buff.unpack("d")
+
+		#pos_x = self.pos_look[0] + x_offset/128.0 - 1.0
+		#pos_y = self.pos_look[1]
+		#pos_z = self.pos_look[2] + z_offset/128.0 - 1.0
+	
+		yaw = int(buff.unpack("f")) 
+		pitch = int(buff.unpack("f"))
+	
+		if yaw != 256:
+			self.in_enc_buff.append(yaw)
+
+		if pitch != 256:
+			self.in_enc_buff.append(pitch)
+
 		buff.restore()
 		self.upstream.send_packet("player_position_and_look", buff.read())
 
@@ -131,15 +169,14 @@ class QuietBridge(Bridge):
 		buff.restore()
 		self.downstream.send_packet("player_position_and_look", buff.read())
 	
-
-class QuietDownstreamFactory(DownstreamFactory):
-	bridge_class = QuietBridge
+class MinecraftProxyFactory(DownstreamFactory):
+	bridge_class = MinecraftProxyBridge
 	motd = "Proxy Server"
 	forwarding_packet_queue = None
 	def __init__(self, c_p_queue = None, s_p_queue = None):
 		self.receiving_packet_queue = s_p_queue
 		self.forwarding_packet_queue = c_p_queue
-		super(QuietDownstreamFactory, self).__init__()
+		super(MinecraftProxyFactory, self).__init__()
 
 
 def main(argv):
@@ -155,7 +192,7 @@ def main(argv):
 # Create factory
 	melist = multiprocessing.Queue()
 	melist2 = multiprocessing.Queue()
-	factory = QuietDownstreamFactory(melist, melist2)
+	factory = MinecraftProxyFactory(melist, melist2)
 	factory.online_mode = False
 	factory.force_protocol_version = 340 
 	factory.connect_host = args.connect_host
@@ -171,21 +208,5 @@ if __name__ == "__main__":
 
 
 
-#	def packet_received(self, buff, direction, name):
-	#	self.logger.info(name + ' ' + direction)
-	#	if(name == "time_update" and self.events_enabled == False): 
-			#self.downstream.ticker.add_loop(50, self.enemy_enc_move)
-	#		self.events_enabled = True
-		#if(name =="spawn_mob"):
-			#print(len(buff))
-		#	buff.save()
-		#	msg = buff.unpack_varint()
-		#	uids = buff.unpack_uuid()
-	#		msg2 = buff.unpack_varint()
-	#		h = buff.unpack("dddbbb")	
-	#		arr = [msg, uids, msg2, h]
-			#self.logger.info(arr)
-	#		buff.restore()
-#		super(QuietBridge, self).packet_received(buff, direction, name)
 
 

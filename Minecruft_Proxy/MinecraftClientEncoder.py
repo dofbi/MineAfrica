@@ -13,6 +13,7 @@ from Crypto.Cipher import AES
 
 class MinecraftClientEncoder(SpawningClientProtocol):
 	def __init__(self, factory, remote_addr):
+		self.packet_done = False
 		self.AES_Block_Len = AES.block_size
 		self.out_enc_buff = bytearray() 
 		self.in_enc_buff = bytearray()
@@ -23,7 +24,6 @@ class MinecraftClientEncoder(SpawningClientProtocol):
 
 #Encoding Functions*************************************************************** 
 	def get_byte_from_buff(self, buff): 
-		buff = self.check_buff(buff)
 		if(len(buff) == 0): 
 			buff_byte = 256; 
 		else:
@@ -33,19 +33,23 @@ class MinecraftClientEncoder(SpawningClientProtocol):
 	def get_bytes_from_buff(self, buff, num_bytes): 
 		buff_bytes = []
 		for num in range(0, num_bytes):
-			print(num)
 			buff_byte = self.get_byte_from_buff(buff)
 			buff_bytes.append(buff_byte)
 		return buff_bytes
 
 	def check_buff(self, buff):
-		if len(buff) < 1: 
+		if len(buff) < 1 and self.factory.forwarding_packet_queue.qsize() > 0: 
 			data = self.factory.forwarding_packet_queue.get()
 			if(data != None): 
+			#	print("Buff Len = " + str(len(data)))
 				buff = bytearray(data)
-			else: 
-				self.encode_player_look()
+			self.encode_player_look()
 		return buff
+
+	def check_packet_done_flag(self): 
+		if self.packet_done: 
+			self.encode_player_look()
+			self.packet_done = False
 
 	#This is the primary encoding method, it checks for data in the packet queue
 	#and then turns the packets into Minecraft movements
@@ -54,13 +58,14 @@ class MinecraftClientEncoder(SpawningClientProtocol):
 			if len(self.out_enc_buff) > 0: 
 				self.encode_inventory_action()
 				self.encode_player_position_and_look()
-			else: 
-				self.out_enc_buff = self.check_buff(self.out_enc_buff)
+			
+			self.out_enc_buff = self.check_buff(self.out_enc_buff)
 
+			
 
 	def encode_inventory_action(self):
 		slot_id = 36 #perhaps add three bits here later 
-		item_id = int(self.out_enc_buff.pop(0)) 
+		item_id = int(self.get_byte_from_buff(self.out_enc_buff))
 		#self.logger.info(item_id)
 		self.send_packet("creative_inventory_action", self.buff_type.pack('h',slot_id) + self.buff_type.pack_slot(item_id))
 	
@@ -81,23 +86,22 @@ class MinecraftClientEncoder(SpawningClientProtocol):
 		self.send_packet("player_position", self.buff_type.pack('ddd?', pos_x, pos_y, pos_z, on_ground))
 
 	def encode_player_position_and_look(self): 
-		out_bytes = self.get_bytes_from_buff(self.out_enc_buff, 4)
+		out_bytes = self.get_bytes_from_buff(self.out_enc_buff, 2)
 		
-		x_offset = out_bytes[0]
-		z_offset = out_bytes[1]
-		yaw = out_bytes[2]
-		pitch = out_bytes[3]
-		print(out_bytes)
+		#x_offset = int(out_bytes[0])
+		#z_offset = int(out_bytes[1])
+		yaw = int(out_bytes[0])
+		pitch = int(out_bytes[1])
+		#print(out_bytes)
 
-		pos_x = self.pos_look[0] + float(x_offset)/128.0 - 1.0
+		pos_x = self.pos_look[0] + 0.1 #x_offset/128.0 - 1.0
 		pos_y = self.pos_look[1]
-		pos_z = self.pos_look[2] + float(z_offset)/128.0 - 1.0
-		look_yaw = float(yaw)
-		print(look_yaw)
-		look_pitch = float(pitch) 
+		pos_z = self.pos_look[2] + 0.1 #z_offset/128.0 - 1.0
+		look_yaw = float(yaw * 1.0)
+		look_pitch = float(pitch * 1.0) 
 		on_ground =	True 
 
-		self.send_packet("player_position_and_look", self.buff_type.pack( 'dddff?', pos_x, pos_y, pos_z, self.pos_look[3], self.pos_look[4], True))
+		self.send_packet("player_position_and_look", self.buff_type.pack( 'dddff?', pos_x, pos_y, pos_z, look_yaw, look_pitch, True))
 	
 
 	#def encode_place_and_remove_block(self):
@@ -153,12 +157,10 @@ class MinecraftClientEncoder(SpawningClientProtocol):
 #Decoding Functions***********************************************************************************
 	#The decoding packet handlers fire whenever a new packet is sent by the server and
 	#add each received TCP packet to the packet handler
-	def check_incoming_buffer(self):
+	def update_incoming_buffer(self):
 		incoming_q = self.factory.receiving_packet_queue
-		if(len(self.in_enc_buff) == self.AES_Block_Len):
-			#print(self.in_enc_buff)
-			incoming_q.put(self.in_enc_buff)	
-			self.in_enc_buff = bytearray()
+		incoming_q.put(self.in_enc_buff)	
+		self.in_enc_buff = bytearray()
 
 	def check_entity(self, data): 
 		return True
@@ -167,22 +169,19 @@ class MinecraftClientEncoder(SpawningClientProtocol):
 		entity_data = buff.unpack_varint()
 		head_pos = buff.unpack("B")
 		if self.check_entity(entity_data): 
-			#print("Hey")
-			self.check_incoming_buffer()
 			self.in_enc_buff.append(head_pos)
 	
 	def packet_spawn_mob(self, buff):
 		buff.read()
 	
 	def packet_entity_relative_move(self, buff):
-		#self.check_incoming_buffer()
 		enemy_id = buff.unpack_varint()
 		enemy_pos = buff.unpack("hhh?")
 
 	def packet_entity_look(self, buff):
-		self.check_incoming_buffer()
+		self.update_incoming_buffer()
 		enemy_id = buff.unpack_varint()
-		self.check_incoming_buffer()
+		self.update_incoming_buffer()
 		#Agreed enemy id for sending messages, negotiate with packages later
 		if(enemy_id == 21445): 
 			self.factory.receiving_packet_queue.put(None)
@@ -193,7 +192,6 @@ class MinecraftClientEncoder(SpawningClientProtocol):
 		buff.discard()
 
 	def packet_entity_look_and_relative_move(self, buff):
-		self.check_incoming_buffer()
 		enemy_id = buff.unpack_varint()
 		buff.read()
 

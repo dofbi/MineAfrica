@@ -10,7 +10,7 @@ from twisted.internet.endpoints import TCP4ClientEndpoint
 from quarry.net.client import ClientFactory, SpawningClientProtocol
 from quarry.net.auth import ProfileCLI
 from MinecraftClientEncoder import MinecraftEncoderFactory
-from MinecraftProxyEncoder import QuietDownstreamFactory
+from MinecraftProxyEncoder import MinecraftProxyFactory
 
 # Import socket module
 import socket              
@@ -56,39 +56,32 @@ def receive_tcp_data(tcp_port, direction, incoming_tcp_q):
 	filt = "host 127.0.0.1 and ( " + port_str + " )"
 	sniff(filter=filt,prn=filter_packets(incoming_tcp_q,duplicate_packets),iface="lo")
 
-def encrypt_tcp_data(incoming_tcp_q, enc_tcp_q): 
+def encrypt_tcp_data(incoming_tcp_q, enc_tcp_q, direction): 
+	#infile = open("sniffed_"+direction+".txt", "wb")
 	while True: 
 		if(incoming_tcp_q.qsize() > 0):
 			raw_data = incoming_tcp_q.get()
-			
+			#if(direction == "src"): 
+			#print(raw_data)
+			#infile.write(bytes(raw_data))
+			#infile.write(b"\n")
 			padded_block = Util.Padding.pad(raw_data, AES.block_size)
 			#encrypt_blocks = padded_block
 			encrypt_blocks = encrypt_load(padded_block)
+			enc_tcp_q.put(bytearray(encrypt_blocks))
 		
-			while(len(encrypt_blocks) >= AES.block_size):
-				block = encrypt_blocks[ :AES.block_size]
-				encrypt_blocks= encrypt_blocks[AES.block_size:]
-				enc_tcp_q.put(bytearray(block))
-			
 			enc_tcp_q.put(None)
 			#print("END")
 
 #Reform AES blocks back into packets
 def decrypt_enc_data(enc_response_q, response_q): 
 	while True:
-		response_packet = bytearray()
-		block_count = 0 
-		block = enc_response_q.get()	
-		while(block != None): 
-			block_count = block_count + 1
-			response_packet += bytearray(block) 
-			block = enc_response_q.get()	
-
-		if len(response_packet) > 0: 
-			#decrypted_pack = response_packet
-			decrypted_pack = decrypt_load(response_packet)
+		enc_pack = enc_response_q.get()	
+		
+		if (enc_pack != None and len(enc_pack) > 0):
+			decrypted_pack = decrypt_load(enc_pack)
 			unpadded_pack = Util.Padding.unpad(decrypted_pack, AES.block_size)
-			response_q.put(bytearray(unpadded_pack))
+			response_q.put(bytes(unpadded_pack))
 				
 @defer.inlineCallbacks
 def runargs(args, enc_packet_q, response_packet_q):
@@ -108,7 +101,7 @@ def client_forward_packet(enc_packet_q, response_packet_q, forward_addr):
 	reactor.run()
 
 def proxy_forward_packet(enc_packet_q, response_packet_q, minecraft_server_addr, minecraft_server_port, listen_addr, listen_port): 
-	factory = QuietDownstreamFactory(enc_packet_q, response_packet_q)
+	factory = MinecraftProxyFactory(enc_packet_q, response_packet_q)
 	factory.online_mode = False
 	factory.force_protocol_version = 340
 	factory.connect_host = minecraft_server_addr
@@ -116,17 +109,20 @@ def proxy_forward_packet(enc_packet_q, response_packet_q, minecraft_server_addr,
 	factory.listen(listen_addr, listen_port)
 	reactor.run()
 
-def send_tcp_data(decrypt_q):
+def send_tcp_data(decrypt_q, direction):
 	# This socket type is required to inject packets in the 'lo'
-	pass
+	#outfile = open("received_"+direction+".txt", "wb")
 	sock = L3RawSocket(iface="lo")
 	while 1:
 		if decrypt_q.qsize() > 0:
 			b_pkt = decrypt_q.get()
 			pkt = TCP(b_pkt)
+			#if(direction == "dst"):
+				#print(pkt)
+			#outfile.write(bytes(b_pkt))
+			#outfile.write(b"\n")
 			tcp  = IP(dst='127.0.0.1')/pkt['TCP']
 			del tcp['TCP'].chksum
-			print(tcp)
 			sock.send(tcp)
 
 
@@ -168,7 +164,6 @@ if __name__ == '__main__':
 	fte_func_args = ()
 
 	fwd_addr = (dest_ip, dest_port)
-	#print("ehhh")
 
 	if(pargs.mode.upper() == "CLIENT"): 
 		direction = "dst"
@@ -184,10 +179,10 @@ if __name__ == '__main__':
 	try:
 		print("Done")
 		incoming_tcp_proc = multiprocessing.Process(target = receive_tcp_data, args=(ports, direction, sniffed_packets_queue))
-		prelim_encrypt_packets = multiprocessing.Process(target = encrypt_tcp_data, args=(sniffed_packets_queue, encrypt_queue))
+		prelim_encrypt_packets = multiprocessing.Process(target = encrypt_tcp_data, args=(sniffed_packets_queue, encrypt_queue, direction))
 		send_fte_packet = multiprocessing.Process(target = forward_packet, args=fte_func_args)
 		decrypt_received_packets = multiprocessing.Process(target=decrypt_enc_data, args=(decrypt_queue, response_queue))
-		forward_received_packets = multiprocessing.Process(target=send_tcp_data, args=(response_queue,))
+		forward_received_packets = multiprocessing.Process(target=send_tcp_data, args=(response_queue, direction))
 
 		incoming_tcp_proc.start()
 		prelim_encrypt_packets.start()

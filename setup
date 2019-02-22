@@ -12,13 +12,15 @@
 #   no existing firewalls are in place.   These rules will clobber
 #   existing iptable rules.
 ####################################################################
-SSHPORT=9002
+SSHPORT=9003
 TORDATADIR='/tmp/tor'
-sudo yum update
-#sudo yum install -y python3 python2.7 scapy python-crypto tor vim python-pip python-psutil scipy
+sudo apt-get update
+sudo apt-get install -y python3 python3-scapy tsocks tor vim python3-pip python-psutil 
 
-#sudo pip3 install quarry
-#sudo pip3 install twisted
+sudo pip3 install pycryptodome
+sudo pip3 install quarry
+sudo pip3 install twisted
+
 sudo iptables --flush
 sudo iptables -A OUTPUT -p tcp --tcp-flags RST RST -j DROP
 sudo iptables -L
