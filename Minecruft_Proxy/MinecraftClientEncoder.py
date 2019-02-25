@@ -41,33 +41,27 @@ class MinecraftClientEncoder(SpawningClientProtocol):
 		if len(buff) < 1 and self.factory.forwarding_packet_queue.qsize() > 0: 
 			data = self.factory.forwarding_packet_queue.get()
 			if(data != None): 
-			#	print("Buff Len = " + str(len(data)))
 				buff = bytearray(data)
 			self.encode_player_look()
 		return buff
-
-	def check_packet_done_flag(self): 
-		if self.packet_done: 
-			self.encode_player_look()
-			self.packet_done = False
 
 	#This is the primary encoding method, it checks for data in the packet queue
 	#and then turns the packets into Minecraft movements
 	def encode(self): 
 		if self.factory.forwarding_packet_queue.qsize() > 0 or len(self.out_enc_buff) > 0:
-			if len(self.out_enc_buff) > 0: 
-				self.encode_inventory_action()
-				self.encode_player_position_and_look()
+			if len(self.out_enc_buff) > 0:
+				for i in range(36, 44): 
+					self.encode_inventory_action(i)
+				#self.encode_player_position_and_look()
 			
 			self.out_enc_buff = self.check_buff(self.out_enc_buff)
 
 			
 
-	def encode_inventory_action(self):
-		slot_id = 36 #perhaps add three bits here later 
+	def encode_inventory_action(self, slot_num):
 		item_id = int(self.get_byte_from_buff(self.out_enc_buff))
 		#self.logger.info(item_id)
-		self.send_packet("creative_inventory_action", self.buff_type.pack('h',slot_id) + self.buff_type.pack_slot(item_id))
+		self.send_packet("creative_inventory_action", self.buff_type.pack('h',slot_num) + self.buff_type.pack_slot(item_id))
 	
 	#These movement methods rely on player positional data which was received from the server
 	def encode_player_look(self):

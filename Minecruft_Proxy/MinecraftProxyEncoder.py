@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import random
 import multiprocessing
 from twisted.internet import reactor
 from quarry.net.proxy import DownstreamFactory, Upstream, UpstreamFactory, Bridge
@@ -13,6 +14,8 @@ class MinecraftProxyBridge(Bridge):
 	
 	def __init__(self, downstream_factory, downstream): 
 		self.clients_and_positions = []
+		self.mobs_per_client = 10 
+		self.first_enemy_id = 21445
 		self.packet_done = False
 		self.block_len = AES.block_size
 
@@ -23,7 +26,6 @@ class MinecraftProxyBridge(Bridge):
 		super().__init__(downstream_factory, downstream)
 
 	def get_byte_from_buff(self, buff): 
-		buff = self.check_buff(buff)
 		if(len(buff) == 0): 
 			buff_byte = 256; 
 		else:
@@ -42,63 +44,59 @@ class MinecraftProxyBridge(Bridge):
 			data = self.downstream.factory.forwarding_packet_queue.get()
 			if(data != None): 
 				buff = bytearray(data)
-			self.packet_done = True
-		return buff
-
-	def check_packet_done_flag(self): 
-		if self.packet_done: 
 			self.enemy_enc_look()
-			self.packet_done = False
+		return buff
 
 	def encode(self): 
 		if self.downstream.factory.forwarding_packet_queue.qsize() > 0 or len(self.out_enc_buff) > 0:
 			if len(self.out_enc_buff) > 0: 
-				self.enemy_enc_head_look(21445)
-				self.enemy_enc_head_look(21446)
-				self.enemy_enc_head_look(21447)
-				self.enemy_enc_head_look(21448)
-			else: 
-				self.out_enc_buff = self.check_buff(self.out_enc_buff)
+				for i in range (self.first_enemy_id, self.first_enemy_id + self.mobs_per_client):
+					self.enemy_enc_head_look(i)
 
-			self.check_packet_done_flag()
+			self.out_enc_buff = self.check_buff(self.out_enc_buff)
+
 
 	def enemy_enc_head_look(self, enemy_id): 
 		val = 0
 		yaw = self.get_byte_from_buff(self.out_enc_buff)
-		self.downstream.send_packet("entity_head_look", self.downstream.buff_type.pack_varint(enemy_id), self.downstream.buff_type.pack("B", yaw ))
+		if(yaw != 256): 
+			self.downstream.send_packet("entity_head_look", self.downstream.buff_type.pack_varint(enemy_id), self.downstream.buff_type.pack("B", yaw ))
+
+	#Uses os.urandom under the hood to generate secure numbers
+	def gen_rand(self, bound): 
+		rand_gen = random.SystemRandom()
+		return rand_gen.randint(0, bound)
 
 	def enemy_enc_look(self): 
-		mid = 21445
-		yaw = 1 
-		val = 2 
+		mid = self.first_enemy_id 
+		yaw = self.gen_rand(255)  
+		val = self.gen_rand(255)
 		self.downstream.send_packet("entity_look", self.downstream.buff_type.pack_varint(mid), self.downstream.buff_type.pack("BB?", yaw, val, True ))
-		#mid is the entity id - we need to assign ids to clients - gen id, and then watch for that id.
-		#self.downstream.send_packet("entity_relative_move", self.downstream.buff_type.pack_varint(mid), self.downstream.buff_type.pack("hhh?", 300, 0, 0, True)) 
+	
+	def spawn_mobs(self, player_position): 
+		first_mob_id = self.first_enemy_id
+		num_mobs = self.mobs_per_client
+		position = player_position
 
-	def enemy_enc_move(self, position):
-		#self.downstream.send_packet
-		#self.logger.info("sent")
-		if(position): 
+		for i in range(0, num_mobs): 
 			chosen_client = self.downstream
-			x = position[0] - 1
-			y = position[1]  
-			z = position[2] + 1 
-			z1 = 1
-			z2 = 1
-			z3 = 1 
-			z4 = 1
-			z5 = 1
-			z6 = 1
-			mid = 21445
-			did =  58 
+			x_pos = position[0] + self.gen_rand(255000)/1000.0 - 127 
+			y_pos = position[1]  
+			z_pos = position[2] + self.gen_rand(255000)/1000.0 - 127 
+			yaw = self.gen_rand(255) 
+			pitch = 0 
+			head_pitch = self.gen_rand(255) 
+			velocity_x = 0 
+			velocity_y = 0
+			velocity_z = 0 
+			enemy_id = first_mob_id + i 
+			enemy_type =  50  + self.gen_rand(2) 
+			meta_data = 255 #signals that no metadata exists
 
-			chosen_client.send_packet("spawn_mob",chosen_client.buff_type.pack_varint(mid) + chosen_client.buff_type.pack_uuid(uuid.UUID.random()) + self.downstream.buff_type.pack_varint(did) + chosen_client.buff_type.pack("dddbbbhhhB", x, y, z, z1, z2, z3, z4, z5, z6, 255))
+			chosen_client.send_packet("spawn_mob",chosen_client.buff_type.pack_varint(enemy_id) + chosen_client.buff_type.pack_uuid(uuid.UUID.random()) + self.downstream.buff_type.pack_varint(enemy_type) + chosen_client.buff_type.pack("dddBBBhhhB", x_pos, y_pos, z_pos, yaw, pitch, head_pitch, velocity_x, velocity_y, velocity_z, meta_data))
 
-			chosen_client.send_packet("spawn_mob",chosen_client.buff_type.pack_varint(mid+1) + chosen_client.buff_type.pack_uuid(uuid.UUID.random()) + self.downstream.buff_type.pack_varint(did) + chosen_client.buff_type.pack("dddbbbhhhB", x+1, y, z+3, z1, z2, z3, z4, z5, z6, 255))
-			
-			chosen_client.send_packet("spawn_mob",chosen_client.buff_type.pack_varint(mid+2) + chosen_client.buff_type.pack_uuid(uuid.UUID.random()) + self.downstream.buff_type.pack_varint(did) + chosen_client.buff_type.pack("dddbbbhhhB", x-2, y, z-6, z1, z2, z3, z4, z5, z6, 255))
-			
-			chosen_client.send_packet("spawn_mob",chosen_client.buff_type.pack_varint(mid+3) + chosen_client.buff_type.pack_uuid(uuid.UUID.random()) + self.downstream.buff_type.pack_varint(did) + chosen_client.buff_type.pack("dddbbbhhhB", x+7, y, z-20, z1, z2, z3, z4, z5, z6, 255))
+
+
 #--------------------------------------------------------------------
 	def update_incoming_buffer(self):
 		self.downstream_factory.receiving_packet_queue.put(self.in_enc_buff)
@@ -149,11 +147,11 @@ class MinecraftProxyBridge(Bridge):
 	
 		yaw = int(buff.unpack("f")) 
 		pitch = int(buff.unpack("f"))
-	
-		if yaw != 256:
+		
+		if yaw < 256 and yaw > 0:
 			self.in_enc_buff.append(yaw)
 
-		if pitch != 256:
+		if pitch < 256 and pitch > 0:
 			self.in_enc_buff.append(pitch)
 
 		buff.restore()
@@ -165,7 +163,7 @@ class MinecraftProxyBridge(Bridge):
 		pos_and_look_struct = buff.unpack("dddff")
 		self.downstream.ticker.add_loop(1, self.encode)
 		self.clients_and_positions.append((self.downstream, pos_and_look_struct))
-		self.enemy_enc_move(pos_and_look_struct)
+		self.spawn_mobs(pos_and_look_struct)
 		buff.restore()
 		self.downstream.send_packet("player_position_and_look", buff.read())
 	

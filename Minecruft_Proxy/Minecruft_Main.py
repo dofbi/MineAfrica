@@ -38,7 +38,7 @@ def decrypt_rsa(key, ciphertext):
 
 def filter_packets(incoming_tcp_q,duplicate_packets):
 	def send_filtered_packets(packet):
-		data = bytes(packet['TCP'])
+		data = packet['TCP']
 		if not data in duplicate_packets:
 			incoming_tcp_q.put(data)
 			duplicate_packets.append(data)
@@ -58,20 +58,22 @@ def receive_tcp_data(tcp_port, direction, incoming_tcp_q):
 
 def encrypt_tcp_data(incoming_tcp_q, enc_tcp_q, direction): 
 	#infile = open("sniffed_"+direction+".txt", "wb")
+	prev_raw_seq = None 
+	prev_raw_ack = None
+
 	while True: 
-		if(incoming_tcp_q.qsize() > 0):
+		if(incoming_tcp_q.qsize() > 0 ):
 			raw_data = incoming_tcp_q.get()
-			#if(direction == "src"): 
-			#print(raw_data)
-			#infile.write(bytes(raw_data))
-			#infile.write(b"\n")
-			padded_block = Util.Padding.pad(raw_data, AES.block_size)
-			#encrypt_blocks = padded_block
+			#if prev_raw_seq != raw_data.seq and prev_raw_ack != raw_data.ack: 
+				#prev_raw_seq = raw_data.seq
+				#prev_raw_ack = raw_data.ack
+				#print(raw_data.show())
+				#print("+++++++++++++++++++++++++++++++")
+			padded_block = Util.Padding.pad(bytes(raw_data), AES.block_size)
 			encrypt_blocks = encrypt_load(padded_block)
 			enc_tcp_q.put(bytearray(encrypt_blocks))
 		
 			enc_tcp_q.put(None)
-			#print("END")
 
 #Reform AES blocks back into packets
 def decrypt_enc_data(enc_response_q, response_q): 
@@ -121,6 +123,7 @@ def send_tcp_data(decrypt_q, direction):
 				#print(pkt)
 			#outfile.write(bytes(b_pkt))
 			#outfile.write(b"\n")
+			
 			tcp  = IP(dst='127.0.0.1')/pkt['TCP']
 			del tcp['TCP'].chksum
 			sock.send(tcp)
@@ -162,6 +165,7 @@ if __name__ == '__main__':
 	decrypt_queue = multiprocessing.Queue()
 	response_queue = multiprocessing.Queue()
 	fte_func_args = ()
+	packetFlag = True
 
 	fwd_addr = (dest_ip, dest_port)
 

@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
 
     #Start Proxy
-    pt_proc = subprocess.Popen(['sudo','./Minecruft_Main.py', 'client', dest_ip, local_port, proxy_port],stdout=subprocess.PIPE)
+    pt_proc = subprocess.Popen(['sudo','./Minecruft_Proxy/Minecruft_Main.py', 'client', dest_ip, local_port],stdout=subprocess.PIPE)
 
     print 'Started'
 
