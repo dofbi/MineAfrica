@@ -7,21 +7,32 @@ from quarry.net.proxy import DownstreamFactory, Upstream, UpstreamFactory, Bridg
 from quarry.types import uuid
 from Crypto.Cipher import AES
 
+#Each client needs its own packet buffer and assigned entity to signal 
+#that it is done
+class UpstreamEncoder(Upstream): 
+	in_enc_buff = bytearray()
+	assigned_enemy = 0
+	assigned_id = 0
+
+class UpstreamEncoderFactory(UpstreamFactory): 
+	protocol = UpstreamEncoder	
+				
 #Each Client and Proxy needs to keep track of which enemy is their own. 
 class MinecraftProxyBridge(Bridge):
 	quiet_mode = False
 	events_enabled = False
+	upstream_factory_class = UpstreamEncoderFactory
 	
 	def __init__(self, downstream_factory, downstream): 
 		self.clients_and_positions = []
-		self.mobs_per_client = 10 
-		self.first_enemy_id = 21445
+		self.mobs_per_client = 20 
+		self.first_enemy_id = 30000 
 		self.packet_done = False
 		self.block_len = AES.block_size
 
 		#We will need one for each client
 		self.out_enc_buff = bytearray() #going out to client
-		self.in_enc_buff = bytearray() #coming from client
+		#self.in_enc_buff = bytearray() #coming from client
 
 		super().__init__(downstream_factory, downstream)
 
@@ -98,9 +109,9 @@ class MinecraftProxyBridge(Bridge):
 
 
 #--------------------------------------------------------------------
-	def update_incoming_buffer(self):
-		self.downstream_factory.receiving_packet_queue.put(self.in_enc_buff)
-		self.in_enc_buff = bytearray()
+	def update_incoming_buffer(self, stream):
+		self.downstream_factory.receiving_packet_queue.put(stream.in_enc_buff)
+		stream.in_enc_buff = bytearray()
 
 
 	#def packet_downstream_spawn_mob(self, buff):
@@ -115,7 +126,7 @@ class MinecraftProxyBridge(Bridge):
 		slot_num  = buff.unpack_slot()
 		item_num = slot_num["item"]
 		if(item_num < 256): 
-			self.in_enc_buff.append(item_num)
+			self.upstream.in_enc_buff.append(item_num)
 
 		buff.restore()
 		self.upstream.send_packet("creative_inventory_action", buff.read())
@@ -124,7 +135,7 @@ class MinecraftProxyBridge(Bridge):
 	#is finished
 	def packet_upstream_player_look(self, buff): 
 		buff.save()
-		self.update_incoming_buffer()
+		self.update_incoming_buffer(self.upstream)
 		self.downstream_factory.receiving_packet_queue.put(None)
 		buff.restore()
 		self.upstream.send_packet("player_look", buff.read())
@@ -148,11 +159,11 @@ class MinecraftProxyBridge(Bridge):
 		yaw = int(buff.unpack("f")) 
 		pitch = int(buff.unpack("f"))
 		
-		if yaw < 256 and yaw > 0:
-			self.in_enc_buff.append(yaw)
+		#if yaw < 256 and yaw > 0:
+			#self.upstream.in_enc_buff.append(yaw)
 
-		if pitch < 256 and pitch > 0:
-			self.in_enc_buff.append(pitch)
+		#if pitch < 256 and pitch > 0:
+			#self.upstream.in_enc_buff.append(pitch)
 
 		buff.restore()
 		self.upstream.send_packet("player_position_and_look", buff.read())

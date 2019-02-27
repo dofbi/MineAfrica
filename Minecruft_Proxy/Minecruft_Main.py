@@ -64,11 +64,6 @@ def encrypt_tcp_data(incoming_tcp_q, enc_tcp_q, direction):
 	while True: 
 		if(incoming_tcp_q.qsize() > 0 ):
 			raw_data = incoming_tcp_q.get()
-			#if prev_raw_seq != raw_data.seq and prev_raw_ack != raw_data.ack: 
-				#prev_raw_seq = raw_data.seq
-				#prev_raw_ack = raw_data.ack
-				#print(raw_data.show())
-				#print("+++++++++++++++++++++++++++++++")
 			padded_block = Util.Padding.pad(bytes(raw_data), AES.block_size)
 			encrypt_blocks = encrypt_load(padded_block)
 			enc_tcp_q.put(bytearray(encrypt_blocks))
@@ -80,7 +75,7 @@ def decrypt_enc_data(enc_response_q, response_q):
 	while True:
 		enc_pack = enc_response_q.get()	
 		
-		if (enc_pack != None and len(enc_pack) > 0):
+		if (enc_pack != None and len(enc_pack)%AES.block_size == 0 and len(enc_pack) > 0):
 			decrypted_pack = decrypt_load(enc_pack)
 			unpadded_pack = Util.Padding.unpad(decrypted_pack, AES.block_size)
 			response_q.put(bytes(unpadded_pack))

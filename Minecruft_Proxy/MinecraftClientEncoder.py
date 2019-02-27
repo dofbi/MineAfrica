@@ -143,7 +143,6 @@ class MinecraftClientEncoder(SpawningClientProtocol):
 			self.send_packet("teleport_confirm", self.buff_type.pack_varint( teleport_id))
 
 		if not self.spawned:
-			#self.ticker.add_loop(1, self.update_player_inc)
 			self.ticker.add_loop(1,self.encode)
 			self.ticker.add_loop(20, self.update_player_full)
 			self.spawned = True
@@ -157,7 +156,7 @@ class MinecraftClientEncoder(SpawningClientProtocol):
 		self.in_enc_buff = bytearray()
 
 	def check_entity(self, data): 
-		return True
+		return data >= 20000; 
 
 	def packet_entity_head_look(self, buff): 
 		entity_data = buff.unpack_varint()
