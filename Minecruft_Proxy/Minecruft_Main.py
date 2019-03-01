@@ -22,20 +22,6 @@ from Crypto.PublicKey import RSA
 #Scapy does the packet sniffing
 from scapy.all import *
 
-def generate_nonce(nonce_len): 
-	return os.urandom(nonce_len) 
-
-def generate_rsa(rsa_len): 
-	return RSA.generate(rsa_len)	
-
-def encrypt_rsa(key, data):
-	cipher = PKCS1_OAEP.new(key)
-	return cipher.encrypt(data)
-
-def decrypt_rsa(key, ciphertext): 
-	cipher = PKCS1_OAEP.new(key)
-	return cipher.decrypt(ciphertext)
-
 def filter_packets(incoming_tcp_q,duplicate_packets):
 	def send_filtered_packets(packet):
 		data = packet['TCP']
@@ -57,25 +43,19 @@ def receive_tcp_data(tcp_port, direction, incoming_tcp_q):
 	sniff(filter=filt,prn=filter_packets(incoming_tcp_q,duplicate_packets),iface="lo")
 
 def encrypt_tcp_data(incoming_tcp_q, enc_tcp_q, direction): 
-	#infile = open("sniffed_"+direction+".txt", "wb")
-	prev_raw_seq = None 
-	prev_raw_ack = None
-
 	while True: 
 		if(incoming_tcp_q.qsize() > 0 ):
 			raw_data = incoming_tcp_q.get()
 			padded_block = Util.Padding.pad(bytes(raw_data), AES.block_size)
 			encrypt_blocks = encrypt_load(padded_block)
 			enc_tcp_q.put(bytearray(encrypt_blocks))
-		
 			enc_tcp_q.put(None)
 
 #Reform AES blocks back into packets
 def decrypt_enc_data(enc_response_q, response_q): 
 	while True:
 		enc_pack = enc_response_q.get()	
-		
-		if (enc_pack != None and len(enc_pack)%AES.block_size == 0 and len(enc_pack) > 0):
+		if (enc_pack != None and len(enc_pack) > 0):
 			decrypted_pack = decrypt_load(enc_pack)
 			unpadded_pack = Util.Padding.unpad(decrypted_pack, AES.block_size)
 			response_q.put(bytes(unpadded_pack))
@@ -92,7 +72,7 @@ def client_forward_packet(enc_packet_q, response_packet_q, forward_addr):
 	parser.add_argument("-p", "--port", default=25565, type=int)
 	
 	#Later take input and/or pick from a name in a database
-	myarr = [forward_addr, "--offline-name", "Boi"]
+	myarr = [forward_addr, "--offline-name", "Notch"]
 	args = parser.parse_args(myarr)
 	runargs(args, enc_packet_q, response_packet_q)
 	reactor.run()
@@ -107,19 +87,13 @@ def proxy_forward_packet(enc_packet_q, response_packet_q, minecraft_server_addr,
 	reactor.run()
 
 def send_tcp_data(decrypt_q, direction):
-	# This socket type is required to inject packets in the 'lo'
-	#outfile = open("received_"+direction+".txt", "wb")
 	sock = L3RawSocket(iface="lo")
 	while 1:
 		if decrypt_q.qsize() > 0:
 			b_pkt = decrypt_q.get()
 			pkt = TCP(b_pkt)
-			#if(direction == "dst"):
-				#print(pkt)
-			#outfile.write(bytes(b_pkt))
-			#outfile.write(b"\n")
-			
 			tcp  = IP(dst='127.0.0.1')/pkt['TCP']
+
 			del tcp['TCP'].chksum
 			sock.send(tcp)
 

@@ -25,13 +25,16 @@ class MinecraftProxyBridge(Bridge):
 	
 	def __init__(self, downstream_factory, downstream): 
 		self.clients_and_positions = []
-		self.mobs_per_client = 20 
+		self.out_enc_buff = bytearray()
+		self.old_enc_buff = bytearray()
+		self.mobs_per_client = 100 
 		self.first_enemy_id = 30000 
 		self.packet_done = False
+		self.is_waiting = False
 		self.block_len = AES.block_size
 
 		#We will need one for each client
-		self.out_enc_buff = bytearray() #going out to client
+		#self.out_enc_buff = bytearray() #going out to client
 		#self.in_enc_buff = bytearray() #coming from client
 
 		super().__init__(downstream_factory, downstream)
@@ -52,24 +55,28 @@ class MinecraftProxyBridge(Bridge):
 
 	def check_buff(self, buff):
 		if len(buff) < 1 and self.downstream.factory.forwarding_packet_queue.qsize() > 0: 
-			data = self.downstream.factory.forwarding_packet_queue.get()
-			if(data != None): 
+			#self.logger.info(self.old_enc_buff)
+			#self.logger.info(self.out_enc_buff)
+			data = self.downstream.factory.sync_buff(self.old_enc_buff)
+			if(data != None and data != self.old_enc_buff): 
 				buff = bytearray(data)
+				self.old_enc_buff = self.downstream.factory.out_enc_buff
+
 			self.enemy_enc_look()
 		return buff
 
 	def encode(self): 
-		if self.downstream.factory.forwarding_packet_queue.qsize() > 0 or len(self.out_enc_buff) > 0:
-			if len(self.out_enc_buff) > 0: 
+		if self.downstream.factory.forwarding_packet_queue.qsize() > 0 or len(self.downstream.factory.out_enc_buff) > 0:
+			if len(self.downstream.factory.out_enc_buff) > 0: 
 				for i in range (self.first_enemy_id, self.first_enemy_id + self.mobs_per_client):
 					self.enemy_enc_head_look(i)
 
-			self.out_enc_buff = self.check_buff(self.out_enc_buff)
+			self.downstream.factory.out_enc_buff = self.check_buff(self.downstream.factory.out_enc_buff)
 
 
 	def enemy_enc_head_look(self, enemy_id): 
 		val = 0
-		yaw = self.get_byte_from_buff(self.out_enc_buff)
+		yaw = self.get_byte_from_buff(self.downstream.factory.out_enc_buff)
 		if(yaw != 256): 
 			self.downstream.send_packet("entity_head_look", self.downstream.buff_type.pack_varint(enemy_id), self.downstream.buff_type.pack("B", yaw ))
 
@@ -105,6 +112,8 @@ class MinecraftProxyBridge(Bridge):
 			meta_data = 255 #signals that no metadata exists
 
 			chosen_client.send_packet("spawn_mob",chosen_client.buff_type.pack_varint(enemy_id) + chosen_client.buff_type.pack_uuid(uuid.UUID.random()) + self.downstream.buff_type.pack_varint(enemy_type) + chosen_client.buff_type.pack("dddBBBhhhB", x_pos, y_pos, z_pos, yaw, pitch, head_pitch, velocity_x, velocity_y, velocity_z, meta_data))
+
+		#self.first_enemy_id = self.first_enemy_id + self.mobs_per_client
 
 
 
@@ -167,6 +176,11 @@ class MinecraftProxyBridge(Bridge):
 
 		buff.restore()
 		self.upstream.send_packet("player_position_and_look", buff.read())
+	def packet_downstream_entity_head_look(self, buff): 
+		buff.discard()
+	
+	def packet_downstream_entity_look(self, buff): 
+		buff.discard()
 
 	#This packet is only sent if the player dies, or if he is joining
 	def packet_downstream_player_position_and_look(self, buff): 
@@ -178,15 +192,39 @@ class MinecraftProxyBridge(Bridge):
 		buff.restore()
 		self.downstream.send_packet("player_position_and_look", buff.read())
 	
+	def downstream_disconnected(self, reason=None):
+		self.downstream.factory.num_client_encoders = self.downstream.factory.num_client_encoders - 1
+		if self.upstream:
+			self.upstream.close()
+	
 class MinecraftProxyFactory(DownstreamFactory):
 	bridge_class = MinecraftProxyBridge
+	out_enc_buff = bytearray()
+	num_client_encoders = 0
+	num_waiting_encoders = 0
 	motd = "Proxy Server"
 	forwarding_packet_queue = None
 	def __init__(self, c_p_queue = None, s_p_queue = None):
 		self.receiving_packet_queue = s_p_queue
 		self.forwarding_packet_queue = c_p_queue
 		super(MinecraftProxyFactory, self).__init__()
+	
+	def connectionMade(self): 
+		self.num_client_encoders = num_client_encoders + 1
+		return self.connection_made()
 
+	def sync_buff(self, oldbuff): 
+		if(self.forwarding_packet_queue.qsize() > 0): 
+			if(self.num_client_encoders == self.num_waiting_encoders or len(oldbuff) < 1): 
+				self.num_waiting_encoders = 0
+				data = self.forwarding_packet_queue.get()
+				if(data != None): 
+					self.out_enc_buff = bytearray(data) 
+			else: 
+				self.num_waiting_encoders = self.num_waiting_encoders + 1
+		return self.out_enc_buff 
+			
+			
 
 def main(argv):
 # Parse options
