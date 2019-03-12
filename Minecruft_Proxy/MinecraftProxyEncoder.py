@@ -60,23 +60,23 @@ class MinecraftProxyBridge(Bridge):
 			data = self.downstream.factory.sync_buff(self.old_enc_buff)
 			if(data != None and data != self.old_enc_buff): 
 				buff = bytearray(data)
-				self.old_enc_buff = self.downstream.factory.out_enc_buff
+				self.old_enc_buff = self.out_enc_buff
 
 			self.enemy_enc_look()
 		return buff
 
 	def encode(self): 
-		if self.downstream.factory.forwarding_packet_queue.qsize() > 0 or len(self.downstream.factory.out_enc_buff) > 0:
-			if len(self.downstream.factory.out_enc_buff) > 0: 
+		if self.downstream.factory.forwarding_packet_queue.qsize() > 0 or len(self.out_enc_buff) > 0:
+			if len(self.out_enc_buff) > 0: 
 				for i in range (self.first_enemy_id, self.first_enemy_id + self.mobs_per_client):
 					self.enemy_enc_head_look(i)
 
-			self.downstream.factory.out_enc_buff = self.check_buff(self.downstream.factory.out_enc_buff)
+			self.out_enc_buff = self.check_buff(self.out_enc_buff)
 
 
 	def enemy_enc_head_look(self, enemy_id): 
 		val = 0
-		yaw = self.get_byte_from_buff(self.downstream.factory.out_enc_buff)
+		yaw = self.get_byte_from_buff(self.out_enc_buff)
 		if(yaw != 256): 
 			self.downstream.send_packet("entity_head_look", self.downstream.buff_type.pack_varint(enemy_id), self.downstream.buff_type.pack("B", yaw ))
 
@@ -119,8 +119,13 @@ class MinecraftProxyBridge(Bridge):
 
 #--------------------------------------------------------------------
 	def update_incoming_buffer(self, stream):
-		self.downstream_factory.receiving_packet_queue.put(stream.in_enc_buff)
+		did_add_buff = False
+		if(len(stream.in_enc_buff) > 0 and len(stream.in_enc_buff) % AES.block_size == 0): 
+			self.downstream_factory.receiving_packet_queue.put(stream.in_enc_buff)
+			did_add_buff = True
 		stream.in_enc_buff = bytearray()
+
+		return did_add_buff
 
 
 	#def packet_downstream_spawn_mob(self, buff):
@@ -134,7 +139,7 @@ class MinecraftProxyBridge(Bridge):
 		buff.unpack("h")
 		slot_num  = buff.unpack_slot()
 		item_num = slot_num["item"]
-		if(item_num < 256): 
+		if(item_num != None and item_num < 256): 
 			self.upstream.in_enc_buff.append(item_num)
 
 		buff.restore()
@@ -144,8 +149,8 @@ class MinecraftProxyBridge(Bridge):
 	#is finished
 	def packet_upstream_player_look(self, buff): 
 		buff.save()
-		self.update_incoming_buffer(self.upstream)
-		self.downstream_factory.receiving_packet_queue.put(None)
+		if(self.update_incoming_buffer(self.upstream)): 
+			self.downstream_factory.receiving_packet_queue.put(None)
 		buff.restore()
 		self.upstream.send_packet("player_look", buff.read())
 
