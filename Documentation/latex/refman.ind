@@ -1,0 +1,25 @@
+\begin{theindex}
+
+  \item {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder.\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}, 
+		\hyperpage{5}
+  \item {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder.\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Encoder\discretionary {-}{}{}Factory}, 
+		\hyperpage{6}
+  \item {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder\discretionary {-}{}{}::\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}
+    \subitem {update\discretionary {-}{}{}\_\discretionary {-}{}{}player\discretionary {-}{}{}\_\discretionary {-}{}{}full}, 
+		\hyperpage{6}
+  \item {Minecraft\discretionary {-}{}{}Proxy\discretionary {-}{}{}Encoder.\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Proxy\discretionary {-}{}{}Bridge}, 
+		\hyperpage{6}
+  \item {Minecraft\discretionary {-}{}{}Proxy\discretionary {-}{}{}Encoder.\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Proxy\discretionary {-}{}{}Factory}, 
+		\hyperpage{7}
+  \item {Minecraft\discretionary {-}{}{}Proxy\discretionary {-}{}{}Encoder.\discretionary {-}{}{}Upstream\discretionary {-}{}{}Encoder}, 
+		\hyperpage{8}
+  \item {Minecraft\discretionary {-}{}{}Proxy\discretionary {-}{}{}Encoder.\discretionary {-}{}{}Upstream\discretionary {-}{}{}Encoder\discretionary {-}{}{}Factory}, 
+		\hyperpage{9}
+
+  \indexspace
+
+  \item {update\discretionary {-}{}{}\_\discretionary {-}{}{}player\discretionary {-}{}{}\_\discretionary {-}{}{}full}
+    \subitem {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder\discretionary {-}{}{}::\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}, 
+		\hyperpage{6}
+
+\end{theindex}
