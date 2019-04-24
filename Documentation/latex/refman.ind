@@ -1,25 +1,106 @@
 \begin{theindex}
 
-  \item {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder.\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}, 
-		\hyperpage{5}
-  \item {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder.\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Encoder\discretionary {-}{}{}Factory}, 
+  \item {check\discretionary {-}{}{}\_\discretionary {-}{}{}buff}
+    \subitem {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder\discretionary {-}{}{}::\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}, 
 		\hyperpage{6}
-  \item {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder\discretionary {-}{}{}::\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}
-    \subitem {update\discretionary {-}{}{}\_\discretionary {-}{}{}player\discretionary {-}{}{}\_\discretionary {-}{}{}full}, 
+  \item {check\discretionary {-}{}{}\_\discretionary {-}{}{}entity}
+    \subitem {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder\discretionary {-}{}{}::\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}, 
 		\hyperpage{6}
-  \item {Minecraft\discretionary {-}{}{}Proxy\discretionary {-}{}{}Encoder.\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Proxy\discretionary {-}{}{}Bridge}, 
-		\hyperpage{6}
-  \item {Minecraft\discretionary {-}{}{}Proxy\discretionary {-}{}{}Encoder.\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Proxy\discretionary {-}{}{}Factory}, 
-		\hyperpage{7}
-  \item {Minecraft\discretionary {-}{}{}Proxy\discretionary {-}{}{}Encoder.\discretionary {-}{}{}Upstream\discretionary {-}{}{}Encoder}, 
-		\hyperpage{8}
-  \item {Minecraft\discretionary {-}{}{}Proxy\discretionary {-}{}{}Encoder.\discretionary {-}{}{}Upstream\discretionary {-}{}{}Encoder\discretionary {-}{}{}Factory}, 
-		\hyperpage{9}
 
   \indexspace
 
-  \item {update\discretionary {-}{}{}\_\discretionary {-}{}{}player\discretionary {-}{}{}\_\discretionary {-}{}{}full}
+  \item {encode}
     \subitem {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder\discretionary {-}{}{}::\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}, 
 		\hyperpage{6}
+  \item {encode\discretionary {-}{}{}\_\discretionary {-}{}{}inventory\discretionary {-}{}{}\_\discretionary {-}{}{}action}
+    \subitem {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder\discretionary {-}{}{}::\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}, 
+		\hyperpage{6}
+  \item {encode\discretionary {-}{}{}\_\discretionary {-}{}{}player\discretionary {-}{}{}\_\discretionary {-}{}{}look}
+    \subitem {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder\discretionary {-}{}{}::\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}, 
+		\hyperpage{6}
+  \item {encode\discretionary {-}{}{}\_\discretionary {-}{}{}player\discretionary {-}{}{}\_\discretionary {-}{}{}position}
+    \subitem {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder\discretionary {-}{}{}::\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}, 
+		\hyperpage{6}
+  \item {encode\discretionary {-}{}{}\_\discretionary {-}{}{}player\discretionary {-}{}{}\_\discretionary {-}{}{}position\discretionary {-}{}{}\_\discretionary {-}{}{}and\discretionary {-}{}{}\_\discretionary {-}{}{}look}
+    \subitem {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder\discretionary {-}{}{}::\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}, 
+		\hyperpage{6}
+
+  \indexspace
+
+  \item {get\discretionary {-}{}{}\_\discretionary {-}{}{}byte\discretionary {-}{}{}\_\discretionary {-}{}{}from\discretionary {-}{}{}\_\discretionary {-}{}{}buff}
+    \subitem {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder\discretionary {-}{}{}::\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}, 
+		\hyperpage{6}
+  \item {get\discretionary {-}{}{}\_\discretionary {-}{}{}bytes\discretionary {-}{}{}\_\discretionary {-}{}{}from\discretionary {-}{}{}\_\discretionary {-}{}{}buff}
+    \subitem {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder\discretionary {-}{}{}::\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}, 
+		\hyperpage{6}
+
+  \indexspace
+
+  \item {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder.\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}, 
+		\hyperpage{5}
+  \item {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder.\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Encoder\discretionary {-}{}{}Factory}, 
+		\hyperpage{7}
+  \item {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder\discretionary {-}{}{}::\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}
+    \subitem {check\discretionary {-}{}{}\_\discretionary {-}{}{}buff}, 
+		\hyperpage{6}
+    \subitem {check\discretionary {-}{}{}\_\discretionary {-}{}{}entity}, 
+		\hyperpage{6}
+    \subitem {encode}, \hyperpage{6}
+    \subitem {encode\discretionary {-}{}{}\_\discretionary {-}{}{}inventory\discretionary {-}{}{}\_\discretionary {-}{}{}action}, 
+		\hyperpage{6}
+    \subitem {encode\discretionary {-}{}{}\_\discretionary {-}{}{}player\discretionary {-}{}{}\_\discretionary {-}{}{}look}, 
+		\hyperpage{6}
+    \subitem {encode\discretionary {-}{}{}\_\discretionary {-}{}{}player\discretionary {-}{}{}\_\discretionary {-}{}{}position}, 
+		\hyperpage{6}
+    \subitem {encode\discretionary {-}{}{}\_\discretionary {-}{}{}player\discretionary {-}{}{}\_\discretionary {-}{}{}position\discretionary {-}{}{}\_\discretionary {-}{}{}and\discretionary {-}{}{}\_\discretionary {-}{}{}look}, 
+		\hyperpage{6}
+    \subitem {get\discretionary {-}{}{}\_\discretionary {-}{}{}byte\discretionary {-}{}{}\_\discretionary {-}{}{}from\discretionary {-}{}{}\_\discretionary {-}{}{}buff}, 
+		\hyperpage{6}
+    \subitem {get\discretionary {-}{}{}\_\discretionary {-}{}{}bytes\discretionary {-}{}{}\_\discretionary {-}{}{}from\discretionary {-}{}{}\_\discretionary {-}{}{}buff}, 
+		\hyperpage{6}
+    \subitem {packet\discretionary {-}{}{}\_\discretionary {-}{}{}entity\discretionary {-}{}{}\_\discretionary {-}{}{}head\discretionary {-}{}{}\_\discretionary {-}{}{}look}, 
+		\hyperpage{7}
+    \subitem {packet\discretionary {-}{}{}\_\discretionary {-}{}{}entity\discretionary {-}{}{}\_\discretionary {-}{}{}look}, 
+		\hyperpage{7}
+    \subitem {packet\discretionary {-}{}{}\_\discretionary {-}{}{}entity\discretionary {-}{}{}\_\discretionary {-}{}{}relative\discretionary {-}{}{}\_\discretionary {-}{}{}move}, 
+		\hyperpage{7}
+    \subitem {packet\discretionary {-}{}{}\_\discretionary {-}{}{}player\discretionary {-}{}{}\_\discretionary {-}{}{}position\discretionary {-}{}{}\_\discretionary {-}{}{}and\discretionary {-}{}{}\_\discretionary {-}{}{}look}, 
+		\hyperpage{7}
+    \subitem {update\discretionary {-}{}{}\_\discretionary {-}{}{}incoming\discretionary {-}{}{}\_\discretionary {-}{}{}buffer}, 
+		\hyperpage{7}
+    \subitem {update\discretionary {-}{}{}\_\discretionary {-}{}{}player\discretionary {-}{}{}\_\discretionary {-}{}{}full}, 
+		\hyperpage{7}
+  \item {Minecraft\discretionary {-}{}{}Proxy\discretionary {-}{}{}Encoder.\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Proxy\discretionary {-}{}{}Bridge}, 
+		\hyperpage{8}
+  \item {Minecraft\discretionary {-}{}{}Proxy\discretionary {-}{}{}Encoder.\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Proxy\discretionary {-}{}{}Factory}, 
+		\hyperpage{9}
+  \item {Minecraft\discretionary {-}{}{}Proxy\discretionary {-}{}{}Encoder.\discretionary {-}{}{}Upstream\discretionary {-}{}{}Encoder}, 
+		\hyperpage{10}
+  \item {Minecraft\discretionary {-}{}{}Proxy\discretionary {-}{}{}Encoder.\discretionary {-}{}{}Upstream\discretionary {-}{}{}Encoder\discretionary {-}{}{}Factory}, 
+		\hyperpage{10}
+
+  \indexspace
+
+  \item {packet\discretionary {-}{}{}\_\discretionary {-}{}{}entity\discretionary {-}{}{}\_\discretionary {-}{}{}head\discretionary {-}{}{}\_\discretionary {-}{}{}look}
+    \subitem {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder\discretionary {-}{}{}::\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}, 
+		\hyperpage{7}
+  \item {packet\discretionary {-}{}{}\_\discretionary {-}{}{}entity\discretionary {-}{}{}\_\discretionary {-}{}{}look}
+    \subitem {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder\discretionary {-}{}{}::\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}, 
+		\hyperpage{7}
+  \item {packet\discretionary {-}{}{}\_\discretionary {-}{}{}entity\discretionary {-}{}{}\_\discretionary {-}{}{}relative\discretionary {-}{}{}\_\discretionary {-}{}{}move}
+    \subitem {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder\discretionary {-}{}{}::\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}, 
+		\hyperpage{7}
+  \item {packet\discretionary {-}{}{}\_\discretionary {-}{}{}player\discretionary {-}{}{}\_\discretionary {-}{}{}position\discretionary {-}{}{}\_\discretionary {-}{}{}and\discretionary {-}{}{}\_\discretionary {-}{}{}look}
+    \subitem {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder\discretionary {-}{}{}::\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}, 
+		\hyperpage{7}
+
+  \indexspace
+
+  \item {update\discretionary {-}{}{}\_\discretionary {-}{}{}incoming\discretionary {-}{}{}\_\discretionary {-}{}{}buffer}
+    \subitem {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder\discretionary {-}{}{}::\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}, 
+		\hyperpage{7}
+  \item {update\discretionary {-}{}{}\_\discretionary {-}{}{}player\discretionary {-}{}{}\_\discretionary {-}{}{}full}
+    \subitem {Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder\discretionary {-}{}{}::\discretionary {-}{}{}Minecraft\discretionary {-}{}{}Client\discretionary {-}{}{}Encoder}, 
+		\hyperpage{7}
 
 \end{theindex}
