@@ -1,7 +1,7 @@
 #!/bin/bash
 ####################################################################
 # Script     : setup
-# Authors    : Jon Oakley and Nathan Tusing
+# Author     : Nathan Tusing
 # Date       : 02/12/2019
 # Description: Setup script that will setup and install and the 
 #   necessary files on an Ubuntu machine.  These files are required
@@ -12,16 +12,20 @@
 #   no existing firewalls are in place.   These rules will clobber
 #   existing iptable rules.
 ####################################################################
-SSHPORT=9003
+SSHPORT=9001
 TORDATADIR='/tmp/tor'
 sudo apt-get update
-sudo apt-get install -y python3 python3-scapy tsocks tor vim python3-pip python-psutil 
+sudo apt-get install -y python3 tsocks tor vim python3-pip python-psutil 
 
+sudo pip3 install scapy
 sudo pip3 install pycryptodome
 sudo pip3 install quarry
 sudo pip3 install twisted
 
 sudo iptables --flush
+sudo iptables -A INPUT -p tcp -m tcp --dport 9001 -j ACCEPT
+sudo iptables -A INPUT -p tcp -m tcp --dport 25565 -j ACCEPT
+sudo iptables -A INPUT -p tcp -m tcp --dport 25566 -j ACCEPT
 sudo iptables -A OUTPUT -p tcp --tcp-flags RST RST -j DROP
 sudo iptables -L
 
