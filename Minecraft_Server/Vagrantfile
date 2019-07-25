@@ -1,0 +1,23 @@
+$setup = <<SCRIPT
+    cd /home/vagrant/minecruft
+    #sudo ./setup_bridge.sh
+    sudo ./setup
+SCRIPT
+
+Vagrant.configure("2") do |config|
+    config.vm.box = "ubuntu/xenial64"
+    config.vm.hostname = "PTDemo"
+
+    config.vm.provider "virtualbox" do |a|
+        a.customize ["modifyvm", :id, "--cpuexecutioncap", "100"]
+        a.memory = "2048"
+        a.name = "Bridge_Node"
+    end
+
+    config.vm.network "public_network", bridge: "wlp2s0"
+    config.vm.synced_folder "..", "/home/vagrant/minecruft"
+
+    config.vm.provision "shell", inline: $setup
+    config.ssh.forward_agent = true
+end
+  
