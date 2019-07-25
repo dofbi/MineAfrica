@@ -5,7 +5,7 @@
 # Date       : 02/12/2019
 # Description: Setup script that will setup and install and the 
 #   necessary files on an Ubuntu machine.  These files are required
-#   for the proxy to run.  Ubuntu 18.04 is required.  Also modifies
+#   for the proxy to run.  Ubuntu 16.04 is required.  Also modifies
 #   iptables so that RST packets are not sents when a connection is
 #   started with a closed port.  This will not affect any existing
 #   programs, but it is not the default behavior.  This assumes that
@@ -15,15 +15,19 @@
 SSHPORT=9001
 TORDATADIR='/tmp/tor'
 sudo apt-get update
-sudo apt-get install -y python3 tsocks tor vim python3-pip python-psutil 
+
+sudo apt-get install -y python3 python3-pip tsocks tor vim python-psutil python3-psutil 
 
 sudo pip3 install scapy
 sudo pip3 install pycryptodome
 sudo pip3 install quarry
 sudo pip3 install twisted
 
+#Only needed for Ubuntu 16.04 VM
+sudo rm -rf /usr/local/lib/python3.5/dist-packages/OpenSSL
+
 sudo iptables --flush
-sudo iptables -A INPUT -p tcp -m tcp --dport 9001 -j ACCEPT
+sudo iptables -A INPUT -p tcp -m tcp --dport $SSHPORT -j ACCEPT
 sudo iptables -A INPUT -p tcp -m tcp --dport 25565 -j ACCEPT
 sudo iptables -A INPUT -p tcp -m tcp --dport 25566 -j ACCEPT
 sudo iptables -A OUTPUT -p tcp --tcp-flags RST RST -j DROP
@@ -33,7 +37,6 @@ sudo iptables -L
 sudo cp bootstrap/bootstrap.py /usr/local/bin/
 sudo cp configs/tsocks.conf /etc/tsocks.conf
 echo "Port $SSHPORT" | sudo tee --append /etc/ssh/sshd_config > /dev/null
-semanage port -a -t ssh_port_t -p tcp $SSHPORT
 sudo service ssh restart
 sudo cp configs/torrc /etc/tor/torrc
 sudo mkdir -p $TORDATADIR

@@ -7,22 +7,50 @@ from quarry.net.proxy import DownstreamFactory, Upstream, UpstreamFactory, Bridg
 from quarry.types import uuid
 from Crypto.Cipher import AES
 
-#Each client needs its own packet buffer and assigned entity to signal
-#that it is done
+#Development notes:
+#Currently mob spawning is handled by the proxy, but other mob logic is not
+#either we allow a real minecraft server to allocate resources, or handle
+#all enitity movements and responses on the Proxy.
+
+#Enemy spawning ID currently is hard-coded to 30000. This is unrealistic.
+#Each new entity spawning ID would be incremented from the last one. For
+#example, a player could be assigned id 10, and then three enemies would be
+#assigned 11, 12, and 13.
+
+#Currently all encrypted packet bytes for to one given PT client is
+#forwarded to all clients. No information is insecure assuming connections
+#are encrypted. However, sending the same packet to all clients in some
+#cases is realistic - such as enemy movements. In others, it may not be.
+
 class UpstreamEncoder(Upstream):
+    """
+    Inherits from Upstream Class. Represents the Client Connection to the
+    Minecraft Server. Contains a buffer <in_enc_buff>  for holding each
+    client's encoded tcp packets.
+    """
     in_enc_buff = bytearray()
     assigned_enemy = 0
     assigned_id = 0
 
 class UpstreamEncoderFactory(UpstreamFactory):
-    protocol = UpstreamEncoder    
-                
+    """
+    Factory class for Upstream encoder for easy instantiation of multiple
+    Upstreams for multiple Minecraft PT clients.
+    """
+    protocol = UpstreamEncoder
+
 #Each Client and Proxy needs to keep track of which enemy is their own.
+#Think of this as a operating system problem of sharing limited resources.
 class MinecraftProxyBridge(Bridge):
+    """
+    Class that holds references to both Upstream and Downstream. Waits for
+    both client (Upstream) and server (Downstream) connections to be
+    established before forwarding packets through the proxy.
+    """
     quiet_mode = False
     events_enabled = False
     upstream_factory_class = UpstreamEncoderFactory
-    
+
     def __init__(self, downstream_factory, downstream):
         self.clients_and_positions = []
         self.out_enc_buff = bytearray()
@@ -40,9 +68,12 @@ class MinecraftProxyBridge(Bridge):
         super().__init__(downstream_factory, downstream)
 
     def get_byte_from_buff(self, buff):
-        if(len(buff) == 0):
-            buff_byte = 256;
-        else:
+        """
+        Right now returns 256 for no bytes in buff. Later change to None
+        to be more Pythonic.
+        """
+        buff_byte = 256
+        if buff:
             buff_byte = buff.pop(0)
         return buff_byte
 
@@ -55,8 +86,6 @@ class MinecraftProxyBridge(Bridge):
 
     def check_buff(self, buff):
         if len(buff) < 1 and self.downstream.factory.forwarding_packet_queue.qsize() > 0:
-            #self.logger.info(self.old_enc_buff)
-            #self.logger.info(self.out_enc_buff)
             data = self.downstream.factory.sync_buff(self.old_enc_buff)
             if(data != None and data != self.old_enc_buff):
                 buff = bytearray(data)
@@ -76,7 +105,7 @@ class MinecraftProxyBridge(Bridge):
 
     def enemy_enc_head_look(self, enemy_id):
         val = 0
-        yaw = self.get_byte_from_buff(self.out_enc_buff)
+        #yaw = self.get_byte_from_buff(self.out_enc_buff)
         if(yaw != 256):
             self.downstream.send_packet("entity_head_look", self.downstream.buff_type.pack_varint(enemy_id), self.downstream.buff_type.pack("B", yaw ))
 
@@ -86,12 +115,20 @@ class MinecraftProxyBridge(Bridge):
         return rand_gen.randint(0, bound)
 
     def enemy_enc_look(self):
+        """
+        Encode a byte into an enity look packet and then forwared to
+        Upstream Client connection.
+        """
         mid = self.first_enemy_id
         yaw = self.gen_rand(255)
         val = self.gen_rand(255)
         self.downstream.send_packet("entity_look", self.downstream.buff_type.pack_varint(mid), self.downstream.buff_type.pack("BB?", yaw, val, True ))
-    
+
     def spawn_mobs(self, player_position):
+        """
+        Spawn mobs in a random position in a sqaure 255x255 blocks centered
+        on the player's starting position.
+        """
         first_mob_id = self.first_enemy_id
         num_mobs = self.mobs_per_client
         position = player_position
@@ -109,7 +146,8 @@ class MinecraftProxyBridge(Bridge):
             velocity_z = 0
             enemy_id = first_mob_id + i
             enemy_type = 50 + self.gen_rand(2)
-            meta_data = 255 #signals that no metadata exists
+            meta_data = 255 #signals that no metadata exists - must be here
+                            #or packet will be malformed.
 
             chosen_client.send_packet("spawn_mob",chosen_client.buff_type.pack_varint(enemy_id) + chosen_client.buff_type.pack_uuid(uuid.UUID.random()) + self.downstream.buff_type.pack_varint(enemy_type) + chosen_client.buff_type.pack("dddBBBhhhB", x_pos, y_pos, z_pos, yaw, pitch, head_pitch, velocity_x, velocity_y, velocity_z, meta_data))
 
@@ -169,10 +207,10 @@ class MinecraftProxyBridge(Bridge):
         #pos_x = self.pos_look[0] + x_offset/128.0 - 1.0
         #pos_y = self.pos_look[1]
         #pos_z = self.pos_look[2] + z_offset/128.0 - 1.0
-    
+
         yaw = int(buff.unpack("f"))
         pitch = int(buff.unpack("f"))
-        
+
         #if yaw < 256 and yaw > 0:
             #self.upstream.in_enc_buff.append(yaw)
 
@@ -183,7 +221,7 @@ class MinecraftProxyBridge(Bridge):
         self.upstream.send_packet("player_position_and_look", buff.read())
     def packet_downstream_entity_head_look(self, buff):
         buff.discard()
-    
+
     def packet_downstream_entity_look(self, buff):
         buff.discard()
 
@@ -196,13 +234,17 @@ class MinecraftProxyBridge(Bridge):
         self.spawn_mobs(pos_and_look_struct)
         buff.restore()
         self.downstream.send_packet("player_position_and_look", buff.read())
-    
+
     def downstream_disconnected(self, reason=None):
         self.downstream.factory.num_client_encoders = self.downstream.factory.num_client_encoders - 1
         if self.upstream:
             self.upstream.close()
-    
+
 class MinecraftProxyFactory(DownstreamFactory):
+    """
+    Factory class for easy instantiation of new Bridge connections between
+    client and server.
+    """
     bridge_class = MinecraftProxyBridge
     out_enc_buff = bytearray()
     num_client_encoders = 0
@@ -213,12 +255,17 @@ class MinecraftProxyFactory(DownstreamFactory):
         self.receiving_packet_queue = s_p_queue
         self.forwarding_packet_queue = c_p_queue
         super(MinecraftProxyFactory, self).__init__()
-    
+
     def connectionMade(self):
         self.num_client_encoders = num_client_encoders + 1
         return self.connection_made()
 
     def sync_buff(self, oldbuff):
+        """
+        Each Downstream must send the same data for enemy movement packets
+        from the global buffer in order for the game sessions to be
+        authentic.
+        """
         if(self.forwarding_packet_queue.qsize() > 0):
             if(self.num_client_encoders == self.num_waiting_encoders or len(oldbuff) < 1):
                 self.num_waiting_encoders = 0
@@ -228,8 +275,6 @@ class MinecraftProxyFactory(DownstreamFactory):
             else:
                 self.num_waiting_encoders = self.num_waiting_encoders + 1
         return self.out_enc_buff
-            
-            
 
 def main(argv):
 # Parse options
@@ -257,8 +302,3 @@ def main(argv):
 if __name__ == "__main__":
     import sys
     main(sys.argv[1:])
-
-
-
-
-

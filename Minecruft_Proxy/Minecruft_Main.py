@@ -1,4 +1,4 @@
-#!/usr/bin/python3          
+#!/usr/bin/python3
 
 import argparse
 import io
@@ -13,10 +13,10 @@ from MinecraftClientEncoder import MinecraftEncoderFactory
 from MinecraftProxyEncoder import MinecraftProxyFactory
 
 # Import socket module
-import socket              
+import socket
 import multiprocessing
 from Crypto.Cipher import AES, PKCS1_OAEP
-from Crypto import Util 
+from Crypto import Util
 from Crypto.PublicKey import RSA
 
 #Scapy does the packet sniffing
@@ -42,8 +42,8 @@ def receive_tcp_data(tcp_port, direction, incoming_tcp_q):
 	filt = "host 127.0.0.1 and ( " + port_str + " )"
 	sniff(filter=filt,prn=filter_packets(incoming_tcp_q,duplicate_packets),iface="lo")
 
-def encrypt_tcp_data(incoming_tcp_q, enc_tcp_q, direction): 
-	while True: 
+def encrypt_tcp_data(incoming_tcp_q, enc_tcp_q, direction):
+	while True:
 		if(incoming_tcp_q.qsize() > 0 ):
 			raw_data = incoming_tcp_q.get()
 			padded_block = Util.Padding.pad(bytes(raw_data), AES.block_size)
