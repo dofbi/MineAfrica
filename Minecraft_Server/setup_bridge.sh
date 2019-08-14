@@ -7,7 +7,7 @@ sudo apt-get update
 
 sudo apt install -y openjdk-8-jre-headless git
 
-cd ..
+cd ../..
 mkdir minecraft_server
 cd minecraft_server
 
