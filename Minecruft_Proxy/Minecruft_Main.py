@@ -120,15 +120,15 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument("mode", help="Client|Server")
 	parser.add_argument("dest_ip", help="The destination ip for the Proxy server if in Client mode, or the destination ip for the actual Minecraft Server in Server mode")
+	parser.add_argument("dest_port", help=" The default is the Minecraft Server Default port 25565.")
 	parser.add_argument("fwd_ports", help="Comma delineated list of ports on which to listen. For example, 80,441")
-	parser.add_argument("--dest-port", help=" The default is the Minecraft Server Default port 25565.")
 	
 	pargs = parser.parse_args()
 	print(pargs)
 
 	ports = pargs.fwd_ports
-	dest_port = 25565 
-	dest_ip = pargs.dest_ip	#"192.168.56.102"
+	dest_port = int(pargs.dest_port) 
+	dest_ip = pargs.dest_ip	
 	sniffed_packets_queue = multiprocessing.Queue()
 	encrypt_queue = multiprocessing.Queue()
 	decrypt_queue = multiprocessing.Queue()

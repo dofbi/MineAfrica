@@ -3,7 +3,7 @@
 # Act as client
 ClientOnly 1
 # Use the protocol proxy on the given port
-Socks4Proxy 127.0.0.1:9001
+Socks4Proxy 127.0.0.1:9003
 # Set circuit building timeouts at 1 hour
 LearnCircuitBuildTimeout 0
 CircuitBuildTimeout 3600

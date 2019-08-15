@@ -105,7 +105,7 @@ class MinecraftProxyBridge(Bridge):
 
     def enemy_enc_head_look(self, enemy_id):
         val = 0
-        #yaw = self.get_byte_from_buff(self.out_enc_buff)
+        yaw = self.get_byte_from_buff(self.out_enc_buff)
         if(yaw != 256):
             self.downstream.send_packet("entity_head_look", self.downstream.buff_type.pack_varint(enemy_id), self.downstream.buff_type.pack("B", yaw ))
 
