@@ -1,8 +1,8 @@
-#Minecruft: A Minecraft Protocol Proxy
+# Minecruft: A Minecraft Protocol Proxy
 
 A protocol proxy based PT that transforms traffic into Minecraft Traffic. 
 
-##Installation
+## Installation
 
 This code base currently is designed for linux systems. For best results, perform this installation on an Ubuntu Host running Ubuntu 16.04. 
 
