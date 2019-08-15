@@ -1,8 +1,8 @@
 #!/usr/bin/env python2
 ####################################################################
 # Script     : copy-certs.py
-# Author     : Jon Oakley
-# Date       : 06/22/2017
+# Author     : Nathan Tusing 
+# Date       : 02/19/2019 
 # Description: This file remotely initiates the bootstrap process on
 #   the server. After the server has retrieve all the certs, the
 #   client copies over the file chunks, coalesces them, and cleans
@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
 
     #Start Proxy
-    pt_proc = subprocess.Popen(['sudo','./Minecruft_Proxy/Minecruft_Main.py', 'client', dest_ip, local_port],stdout=subprocess.PIPE)
+    pt_proc = subprocess.Popen(['sudo','./Minecruft_Proxy/Minecruft_Main.py', 'client', dest_ip, local_port, proxy_port],stdout=subprocess.PIPE)
 
     print 'Started'
 

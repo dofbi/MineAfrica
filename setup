@@ -3,7 +3,7 @@
 # Script     : setup
 # Author     : Nathan Tusing
 # Date       : 02/12/2019
-# Description: Setup script that will setup and install and the 
+# Description: Setup script that will setup and install the 
 #   necessary files on an Ubuntu machine.  These files are required
 #   for the proxy to run.  Ubuntu 16.04 is required.  Also modifies
 #   iptables so that RST packets are not sents when a connection is
@@ -12,6 +12,12 @@
 #   no existing firewalls are in place.   These rules will clobber
 #   existing iptable rules.
 ####################################################################
+if [ "$#" -ne 1 ];
+then    
+    echo "Add the -s flag or -c flag for a server or client setup."
+    exit -1
+fi
+
 SSHPORT=9001
 TORDATADIR='/tmp/tor'
 sudo apt-get update
@@ -33,19 +39,23 @@ sudo iptables -A INPUT -p tcp -m tcp --dport 25566 -j ACCEPT
 sudo iptables -A OUTPUT -p tcp --tcp-flags RST RST -j DROP
 sudo iptables -L
 
-# Installation
-sudo cp bootstrap/bootstrap.py /usr/local/bin/
-sudo cp configs/tsocks.conf /etc/tsocks.conf
-echo "Port $SSHPORT" | sudo tee --append /etc/ssh/sshd_config > /dev/null
-sudo service ssh restart
-sudo cp configs/torrc /etc/tor/torrc
-sudo mkdir -p $TORDATADIR
-sudo chown -R `whoami` $TORDATADIR
-sudo chmod u+rwx -R $TORDATADIR
+# Server/Client Specific Installation
+if [ $1 == "-s" ]; then
+    sudo cp bootstrap/bootstrap.py /usr/local/bin/
+    echo "Port $SSHPORT" | sudo tee --append /etc/ssh/sshd_config > /dev/null
+    sudo service ssh restart
+    echo "The following non-standard ssh port was opened"
+    echo "ssh -p $SSHPORT user@host"
+elif [ $1 == "-c" ]; then
+    sudo cp configs/tsocks.conf /etc/tsocks.conf
+    sudo cp configs/torrc /etc/tor/torrc
+    sudo mkdir -p $TORDATADIR
+    sudo chown -R `whoami` $TORDATADIR
+    sudo chmod u+rwx -R $TORDATADIR
+else 
+    exit -1
+fi
 
-echo "The following non-standard ssh port was opened"
-echo "ssh -p $SSHPORT user@host"
-echo ""
-echo "Copy the ntp-proxy folder to wherever you would like to install it."
-echo "Keep in mind the copy-certs.py file must be run from the that folder"
+echo "Copy the Minecruft_Proxy folder to wherever you would like to install it."
+echo "Keep in mind the copy-certs.py file must be run from the that folder (if you are the client)"
 echo "Setup Complete"

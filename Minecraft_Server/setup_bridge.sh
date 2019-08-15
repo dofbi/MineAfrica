@@ -7,7 +7,6 @@ sudo apt-get update
 
 sudo apt install -y openjdk-8-jre-headless git
 
-cd ../..
 mkdir minecraft_server
 cd minecraft_server
 
@@ -27,4 +26,7 @@ sudo cp ../minecruft/Minecraft_Server/start_server.sh .
 #sudo apt-get remove -y python3
 
 cd /home/vagrant/minecruft
-sudo ./setup
+sudo ./setup "-s"
+
+cd ../minecraft_server
+nohup ./start_server.sh  &
