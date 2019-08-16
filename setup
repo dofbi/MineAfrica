@@ -22,12 +22,12 @@ SSHPORT=9001
 TORDATADIR='/tmp/tor'
 sudo apt-get update
 
-sudo apt-get install -y python3 python3-pip tsocks tor vim python-psutil python3-psutil 
+sudo apt-get install -y python3 python3-pip tsocks tor vim python-psutil python3-psutil python-pip 
 
 sudo pip3 install scapy
 sudo pip3 install pycryptodome
 sudo pip3 install quarry
-sudo pip3 install twisted
+sudo pip3 install twisted --upgrade
 
 #Only needed for Ubuntu 16.04 VM
 sudo rm -rf /usr/local/lib/python3.5/dist-packages/OpenSSL
