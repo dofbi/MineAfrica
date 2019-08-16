@@ -48,9 +48,29 @@ ssh -i .vagrant/machines/default/virtualbox/private-key -D 9003 localhost
 
 This starts a SOCKS proxy on the server.
 
-Then in the other tab run: ./Minecruft_Main.py server 127.0.0.1 25566 9003
+Then, in the same tab, navigate to the minecraft server using
+
+cd ~/minecraft_server 
+and then run 
+sudo ./start_server.sh
+
+Then in the other tab run: sudo ./Minecruft_Main.py server 127.0.0.1 25566 9003
 
 This will start the Proxy Server for Minecruft
+
+Then on your host machine navigate to the Minecruft_Proxy folder
+cd Minecruft/Minecruft_Proxy
+and run the command 
+
+sudo ./Minecruft_Main.py client $VagrantIP 25565 9003
+
+Finally, vagrant ssh using one more terminal and run 
+iperf -s -p 9003
+
+and in another terminal on your host; run 
+iperf -y C -b 1k -c 127.0.0.1 -p 9003
+
+
 
 
 

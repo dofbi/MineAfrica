@@ -17,11 +17,6 @@ from Crypto.Cipher import AES
 #example, a player could be assigned id 10, and then three enemies would be
 #assigned 11, 12, and 13.
 
-#Currently all encrypted packet bytes for to one given PT client is
-#forwarded to all clients. No information is insecure assuming connections
-#are encrypted. However, sending the same packet to all clients in some
-#cases is realistic - such as enemy movements. In others, it may not be.
-
 class UpstreamEncoder(Upstream):
     """
     Inherits from Upstream Class. Represents the Client Connection to the
