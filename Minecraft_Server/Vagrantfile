@@ -1,11 +1,11 @@
-$static_ip = "192.168.2.177" #Change this to be an IP on your LAN such as 192.168.0.199/24 if your computer is on the same subnet 
+$static_ip = "192.168.1.177" #Change this to be an IP on your LAN such as 192.168.0.199/24 if your computer is on the same subnet 
 
 Vagrant.configure("2") do |config|
     config.vm.box = "ubuntu/xenial64"
     config.vm.hostname = "PTDemo"
 
     config.vm.provider "virtualbox" do |a|
-        a.memory = "2048"
+        a.memory = "1024"
         a.name = "Bridge_Node"
     end
 
