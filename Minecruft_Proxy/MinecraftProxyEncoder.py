@@ -86,19 +86,19 @@ class MinecraftProxyBridge(Bridge):
                 buff = bytearray(data)
                 self.old_enc_buff = self.out_enc_buff
 
-            self.enemy_enc_look()
+            self.encode_enemy_look()
         return buff
 
     def encode(self):
         if self.downstream.factory.forwarding_packet_queue.qsize() > 0 or len(self.out_enc_buff) > 0:
             if len(self.out_enc_buff) > 0:
                 for i in range (self.first_enemy_id, self.first_enemy_id + self.mobs_per_client):
-                    self.enemy_enc_head_look(i)
+                    self.encode_enemy_head_look(i)
 
             self.out_enc_buff = self.check_buff(self.out_enc_buff)
 
 
-    def enemy_enc_head_look(self, enemy_id):
+    def encode_enemy_head_look(self, enemy_id):
         val = 0
         yaw = self.get_byte_from_buff(self.out_enc_buff)
         if(yaw != 256):
@@ -109,7 +109,7 @@ class MinecraftProxyBridge(Bridge):
         rand_gen = random.SystemRandom()
         return rand_gen.randint(0, bound)
 
-    def enemy_enc_look(self):
+    def encode_enemy_look(self):
         """
         Encode a byte into an enity look packet and then forwared to
         Upstream Client connection.

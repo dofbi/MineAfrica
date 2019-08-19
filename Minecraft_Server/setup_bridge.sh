@@ -7,6 +7,8 @@ sudo apt-get update
 
 sudo apt install -y openjdk-8-jre-headless git
 
+#Prevents host from forwarding duplicate network packets to bridged vagrant VM
+sudo sysctl -w net.ipv4.ip_forward=0
 cd /home/vagrant/minecruft
 sudo ./setup "-s"
 

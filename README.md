@@ -44,7 +44,7 @@ In the Minecraft_Server Directory Tab run
 
 vagrant ssh
 
-ssh -i .vagrant/machines/default/virtualbox/private-key -D 9003 localhost
+ssh -i .vagrant/machines/default/virtualbox/private_key -D 9003 localhost
 
 This starts a SOCKS proxy on the server.
 
@@ -69,9 +69,3 @@ iperf -s -p 9003
 
 and in another terminal on your host; run 
 iperf -y C -b 1k -c 127.0.0.1 -p 9003
-
-
-
-
-
-
