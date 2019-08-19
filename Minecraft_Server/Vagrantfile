@@ -1,18 +1,35 @@
-$static_ip = "192.168.1.177" #Change this to be an IP on your LAN such as 192.168.0.199/24 if your computer is on the same subnet 
+$client_static_ip = "192.168.1.177" #Change this to be an IP on your LAN such as 192.168.0.199/24 if your computer is on the same subnet 
+$bridge_static_ip = "192.168.1.178" 
 
 Vagrant.configure("2") do |config|
-    config.vm.box = "ubuntu/xenial64"
-    config.vm.hostname = "PTDemo"
+    config.vm.define "Client" do |client|
+        client.vm.box = "ubuntu/xenial64"
+        client.vm.hostname = "client"
 
-    config.vm.provider "virtualbox" do |a|
-        a.memory = "1024"
-        a.name = "Bridge_Node"
+        client.vm.provider "virtualbox" do |a|
+            a.memory = "1024"
+            a.name = "MinecruftClientDev"
+        end
+
+        client.vm.network "public_network", ip: $static_ip 
+        client.vm.synced_folder "..", "/home/vagrant/minecruft"
+
+        client.vm.provision "shell", :path => "../setup", :args => "-c"
     end
 
-    config.vm.network "public_network", ip: $static_ip 
-    config.vm.synced_folder "..", "/home/vagrant/minecruft"
+    config.vm.define "Bridge" do |proxy|
+        proxy.vm.box = "ubuntu/xenial64"
+        proxy.vm.hostname = "bridge"
 
-    config.vm.provision "shell", :path => "setup_bridge.sh"
-    config.ssh.forward_agent = true
+        proxy.vm.provider "virtualbox" do |a|
+            a.memory = "1024"
+            a.name = "MinecruftProxyDev"
+        end
+
+        proxy.vm.network "public_network", ip: $static_ip 
+        proxy.vm.synced_folder "..", "/home/vagrant/minecruft"
+
+        proxy.vm.provision "shell", :path => "../setup", :args => "-s"
+    end
 end
-  
+      
