@@ -65,16 +65,19 @@ class MinecraftClientEncoder(SpawningClientProtocol):
 
     def encode(self):
         """
-        Encode packet bytes as minecraft movements. Currently just encodes
-        as creative mode inventory actions, but this can be expanded to
-        other movement types.
+        Encode packet bytes as minecraft movements. Currently just 
+        encodes as creative mode inventory actions, but this can be 
+        expanded to other movement types. This is where any new encoder
+        functions should be called.
         """
         if self.factory.forwarding_packet_queue.qsize() > 0 or len(self.out_enc_buff) > 0:
             if len(self.out_enc_buff) > 0:
-                #This range accounts for the 8 on screen inventory windows
-                #for a client
+                #The range from 1 to 100 here is arbitrary.
+                #These numbers can be changed to more accurately
+                #resemble inventory slots
                 for i in range(1, 100):
                     self.encode_inventory_action(i)
+                #TODO ADD ENCODER FUNCTIONS HERE
 
             self.out_enc_buff = self.check_buff(self.out_enc_buff)
    

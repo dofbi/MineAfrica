@@ -20,10 +20,10 @@ from Crypto.Cipher import AES
 class UpstreamEncoder(Upstream):
     """
     Inherits from Upstream Class. Represents the Client Connection to the
-    Minecraft Server. Contains a buffer <in_enc_buff>  for holding each
-    client's encoded tcp packets.
+    Minecraft Server. Contains a buffer <Proxy_bound_buff>  for holding packets
+    destined for the Minecruft Client.     
     """
-    in_enc_buff = bytearray()
+    proxy_bound_buff = bytearray()
     assigned_enemy = 0
     assigned_id = 0
 
@@ -48,7 +48,7 @@ class MinecraftProxyBridge(Bridge):
 
     def __init__(self, downstream_factory, downstream):
         self.clients_and_positions = []
-        self.out_enc_buff = bytearray()
+        self.client_bound_buff = bytearray()
         self.old_enc_buff = bytearray()
         self.mobs_per_client = 100
         self.first_enemy_id = 30000
@@ -57,8 +57,8 @@ class MinecraftProxyBridge(Bridge):
         self.block_len = AES.block_size
 
         #We will need one for each client
-        #self.out_enc_buff = bytearray() #going out to client
-        #self.in_enc_buff = bytearray() #coming from client
+        #self.client_bound_buff = bytearray() #going out to client
+        #self.proxy_bound_buff = bytearray() #coming from client
 
         super().__init__(downstream_factory, downstream)
 
@@ -73,6 +73,9 @@ class MinecraftProxyBridge(Bridge):
         return buff_byte
 
     def get_bytes_from_buff(self, buff, num_bytes):
+        """
+        Read num_bytes from a buffer. Returns a list of bytes. 
+        """
         buff_bytes = []
         for num in range(0, num_bytes):
             buff_byte = self.get_byte_from_buff(buff)
@@ -80,38 +83,54 @@ class MinecraftProxyBridge(Bridge):
         return buff_bytes
 
     def check_buff(self, buff):
+        """
+        Checks when a buffer or queue is emptied. When a buffer is emptied, that means
+        a full TCP packet has been transmitted to the client. When a full TCP packet is transmitted,
+        it signals the Minecruft client with an encode_enemy_look packet.
+        """
         if len(buff) < 1 and self.downstream.factory.forwarding_packet_queue.qsize() > 0:
             data = self.downstream.factory.sync_buff(self.old_enc_buff)
             if(data != None and data != self.old_enc_buff):
                 buff = bytearray(data)
-                self.old_enc_buff = self.out_enc_buff
+                self.old_enc_buff = self.client_bound_buff
 
             self.encode_enemy_look()
         return buff
 
     def encode(self):
-        if self.downstream.factory.forwarding_packet_queue.qsize() > 0 or len(self.out_enc_buff) > 0:
-            if len(self.out_enc_buff) > 0:
+        """
+        This is the main encode function that encodes packet bytes as
+        minecraft movements. This is where any new encoder functions
+        should be called. 
+        """
+        if self.downstream.factory.forwarding_packet_queue.qsize() > 0 or len(self.client_bound_buff) > 0:
+            if len(self.client_bound_buff) > 0:
                 for i in range (self.first_enemy_id, self.first_enemy_id + self.mobs_per_client):
                     self.encode_enemy_head_look(i)
+                    #TODO ADD ENCODER FUNCTIONS HERE
 
-            self.out_enc_buff = self.check_buff(self.out_enc_buff)
+            self.client_bound_buff = self.check_buff(self.client_bound_buff)
 
 
     def encode_enemy_head_look(self, enemy_id):
-        val = 0
-        yaw = self.get_byte_from_buff(self.out_enc_buff)
+        """
+        Read a byte from client_bound_buff and send in entity head 
+        look packet. 
+        """
+        yaw = self.get_byte_from_buff(self.client_bound_buff)
         if(yaw != 256):
             self.downstream.send_packet("entity_head_look", self.downstream.buff_type.pack_varint(enemy_id), self.downstream.buff_type.pack("B", yaw ))
 
-    #Uses os.urandom under the hood to generate secure numbers
     def gen_rand(self, bound):
+        """
+        Uses os.urandom to generate random integer. 
+        """
         rand_gen = random.SystemRandom()
         return rand_gen.randint(0, bound)
 
     def encode_enemy_look(self):
         """
-        Encode a byte into an enity look packet and then forwared to
+        Encode a byte into an entity look packet and then forward to
         Upstream Client connection.
         """
         mid = self.first_enemy_id
@@ -123,6 +142,8 @@ class MinecraftProxyBridge(Bridge):
         """
         Spawn mobs in a random position in a sqaure 255x255 blocks centered
         on the player's starting position.
+        This function should not be used if the Minecraft server is meant to 
+        generate mobs.
         """
         first_mob_id = self.first_enemy_id
         num_mobs = self.mobs_per_client
@@ -141,8 +162,8 @@ class MinecraftProxyBridge(Bridge):
             velocity_z = 0
             enemy_id = first_mob_id + i
             enemy_type = 50 + self.gen_rand(2)
-            meta_data = 255 #signals that no metadata exists - must be here
-                            #or packet will be malformed.
+            meta_data = 255 #signals that no NBT Minecraft metadata exists- must be here
+                            #or packet will be malformed. 
 
             chosen_client.send_packet("spawn_mob",chosen_client.buff_type.pack_varint(enemy_id) + chosen_client.buff_type.pack_uuid(uuid.UUID.random()) + self.downstream.buff_type.pack_varint(enemy_type) + chosen_client.buff_type.pack("dddBBBhhhB", x_pos, y_pos, z_pos, yaw, pitch, head_pitch, velocity_x, velocity_y, velocity_z, meta_data))
 
@@ -152,20 +173,16 @@ class MinecraftProxyBridge(Bridge):
 
 #--------------------------------------------------------------------
     def update_incoming_buffer(self, stream):
+        """
+        """
         did_add_buff = False
-        if(len(stream.in_enc_buff) > 0 and len(stream.in_enc_buff) % AES.block_size == 0):
-            self.downstream_factory.receiving_packet_queue.put(stream.in_enc_buff)
+        if(len(stream.proxy_bound_buff) > 0 and len(stream.proxy_bound_buff) % AES.block_size == 0):
+            self.downstream_factory.receiving_packet_queue.put(stream.proxy_bound_buff)
             did_add_buff = True
-        stream.in_enc_buff = bytearray()
+        stream.proxy_bound_buff = bytearray()
 
         return did_add_buff
 
-
-    #def packet_downstream_spawn_mob(self, buff):
-        #buff.discard()
-
-    #def packet_downstream_entity_relative_move(self, buff):
-        #buff.discard()
 
     def packet_upstream_creative_inventory_action(self, buff):
         buff.save()
@@ -173,7 +190,7 @@ class MinecraftProxyBridge(Bridge):
         slot_num = buff.unpack_slot()
         item_num = slot_num["item"]
         if(item_num != None and item_num < 256):
-            self.upstream.in_enc_buff.append(item_num)
+            self.upstream.proxy_bound_buff.append(item_num)
 
         buff.restore()
         self.upstream.send_packet("creative_inventory_action", buff.read())
@@ -207,10 +224,10 @@ class MinecraftProxyBridge(Bridge):
         pitch = int(buff.unpack("f"))
 
         #if yaw < 256 and yaw > 0:
-            #self.upstream.in_enc_buff.append(yaw)
+            #self.upstream.proxy_bound_buff.append(yaw)
 
         #if pitch < 256 and pitch > 0:
-            #self.upstream.in_enc_buff.append(pitch)
+            #self.upstream.proxy_bound_buff.append(pitch)
 
         buff.restore()
         self.upstream.send_packet("player_position_and_look", buff.read())
@@ -241,7 +258,7 @@ class MinecraftProxyFactory(DownstreamFactory):
     client and server.
     """
     bridge_class = MinecraftProxyBridge
-    out_enc_buff = bytearray()
+    client_bound_buff = bytearray()
     num_client_encoders = 0
     num_waiting_encoders = 0
     motd = "Proxy Server"
@@ -266,10 +283,10 @@ class MinecraftProxyFactory(DownstreamFactory):
                 self.num_waiting_encoders = 0
                 data = self.forwarding_packet_queue.get()
                 if(data != None):
-                    self.out_enc_buff = bytearray(data)
+                    self.client_bound_buff = bytearray(data)
             else:
                 self.num_waiting_encoders = self.num_waiting_encoders + 1
-        return self.out_enc_buff
+        return self.client_bound_buff
 
 def main(argv):
 # Parse options
