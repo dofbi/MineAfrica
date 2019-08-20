@@ -35,9 +35,13 @@ cd ..
 ## Running the Proxy and Client
 
 In the Minecruft/Minecraft_Server Directory Tab open four terminal windows or tabs. Run these four commands (one in each terminal). 
+
 vagrant ssh Bridge
+
 vagrant ssh Bridge
+
 vagrant ssh Client
+
 vagrant ssh Client
 
 (OR just open the machines using virtualbox and use a tool like screen - the default usernames are "vagrant", and the default passwords are "vagrant" on both machines.) 
